@@ -20,7 +20,7 @@ const About = () => {
       name: "Adam Lamkirta",
       linkedIn: "https://www.linkedin.com/in/adam-lamkirta", 
       image: "/images/adam.jpg",
-      github: "https://github.com/adam-lamkirta",
+      github: "https://github.com/adamaeoj1",
     },
     {
       name: "Ammar Ahmed Hassaan",
