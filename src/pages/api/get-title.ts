@@ -54,7 +54,24 @@ export default async function handler(
 
   const { userInput } = parseResult.data;
 
-  const prompt = `Create a title for the following context that the user will give. Write the title in less than 5 words. Write a short description using less than 20 words`;
+  const prompt = `You are an expert title and description generator. Please:
+    1. Detect the language of this input (Arabic or English)
+    2. Create a compelling title in the same language as the input:
+       - Maximum 5 words
+       - Captures the core topic/theme
+       - Uses engaging, descriptive language
+       - Maintains cultural appropriateness
+    3. Write a concise description in the same language:
+       - Maximum 20 words
+       - Highlights key points
+       - Provides valuable context
+       - Matches the tone and style of the title
+    4. Ensure both title and description:
+       - Are grammatically correct in the detected language
+       - Maintain consistency in terminology
+       - Consider cultural nuances
+       - Are clear and engaging`;
+
   const completion = await openai.beta.chat.completions.parse({
     model: "gpt-4o-mini-2024-07-18",
     messages: [
@@ -64,10 +81,11 @@ export default async function handler(
       },
       {
         role: "user",
-        content: `You must create the title and description using this context: "${userInput}".`,
+        content: `Please analyze this text and generate an appropriate title and description in its language: "${userInput}"`,
       },
     ],
     response_format: zodResponseFormat(QuestionAndAnswerFormat, "event"),
+    temperature: 0.7,
   });
 
   const event = completion.choices[0].message.parsed;

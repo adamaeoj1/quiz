@@ -70,36 +70,61 @@ export default async function handler(
 
   const { userInput, type, questionAmount, difficulty } = parseResult.data;
 
-  const prompts = [
-    `You are an expert teacher. I will provide you with text, and I want you to:
-    1. Carefully analyze this text: "${userInput}"
-    2. Create ${questionAmount} ${type === "multiple-choice" ? "multiple-choice" : "true/false"} questions
-    3. For multiple-choice: provide one correct answer and 2-3 plausible incorrect options
-    4. For true/false: create statements that require analysis
-    5. Match the difficulty level '${difficulty}' by adjusting complexity and depth
-    6. Include for each question:
-       - Clear question text based on the provided content
-       - Detailed explanation of the correct answer
-       - For wrong options: explain why they are incorrect
-    7. Important: Only use information directly stated in or clearly implied by the provided text`,
-  ];
+  const prompt = `You are an expert Kuwaiti educator specializing in assessment and evaluation. Your task is to:
+
+  1. Create ${questionAmount} ${type === "multiple-choice" ? "multiple-choice" : "true/false"} questions EXCLUSIVELY from this text: "${userInput}"
+  
+  2. Critical rules for Kuwaiti educational standards:
+     - Questions MUST be derived ONLY from the provided text content
+     - NO external information or knowledge should be added
+     - All questions and answers must be directly verifiable from the text
+     - Detect if the text is in Arabic or English and respond in the same language
+     - Follow Kuwaiti Ministry of Education guidelines for question formation
+  
+  3. For each question:
+     - Questions must cite specific text passages
+     - Explanations must include direct quotes from the text
+     - All answers must be based on explicit text content
+     - Use culturally appropriate language and examples relevant to Kuwait
+  
+  4. Format requirements:
+     ${type === "multiple-choice" 
+       ? "- Create exactly one correct answer and 3-4 incorrect options based on the text\n     - Incorrect options must represent common misunderstandings of the text content"
+       : "- Develop true/false statements that test comprehension of explicit text content\n     - Each statement must be directly verifiable from the text"}
+  
+  5. Difficulty levels aligned with Kuwaiti educational standards - '${difficulty}':
+     - Easy: Direct text comprehension and main ideas
+     - Medium: Connecting multiple concepts from the text
+     - Hard: Critical analysis of text implications
+  
+  Important: Every question, answer, and explanation must be traceable to specific content in the text. Maintain high standards of Kuwaiti educational practices.`;
 
   const completion = await openai.beta.chat.completions.parse({
     model: "gpt-4o-mini-2024-07-18",
     messages: [
       {
         role: "system",
-        content: prompts.join(" "),
+        content: prompt,
       },
       {
         role: "user",
-        content: `Please create questions using the following context: "${userInput}".`,
+        content: userInput,
       },
     ],
     response_format: zodResponseFormat(QuestionAndAnswerFormat, "event"),
+    temperature: 0.7,
+    max_tokens: 2000,
   });
 
   const event = completion.choices[0].message.parsed;
+
+  // Randomize the order of answers for multiple choice questions
+  if (event && type === "multiple-choice") {
+    event.questions = event.questions.map(question => ({
+      ...question,
+      answers: question.answers.sort(() => Math.random() - 0.5)
+    }));
+  }
 
   res.status(200).json({ message: "All good", data: event });
 }
